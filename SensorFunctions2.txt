@@ -1,0 +1,53 @@
+#include "ArduinoPins.h"
+#include <Arduino.h>
+#include "SensorFunctions.h"
+#include "PIDController.h"
+bool front_stop = 0;
+double obstacle_distance = 0; 
+
+
+
+
+/*bool poll_reye (bool &Rold_state){
+  bool Rnew_state = digitalRead(REYE);
+  if (Rnew_state != Rold_state){
+    Rold_state = Rnew_state;
+    return true;
+  }
+  return false;
+}
+bool poll_leye (bool &Lold_state){
+  bool Lnew_state = digitalRead(LEYE);
+  if (Lnew_state != Lold_state){
+    Lold_state = Lnew_state;
+    return true;
+  }
+  return false;
+}
+*/
+void getObstacleDistance(){
+  double distance;
+  double duration;
+
+  digitalWrite(US_TRIG, LOW );
+  delayMicroseconds(2); 
+  digitalWrite(US_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(US_TRIG, LOW);
+  duration = pulseIn(US_ECHO, HIGH); // Measure pulse duration
+  distance = duration / 58;  // Convert to cm
+  if (distance < 35 ){
+    distMode = 1;
+  }
+  else {
+    distMode = 0;
+  }
+  if (distance > 13 || distance <=0){
+    front_stop = 0;
+  }else {
+    front_stop = 1;
+  }
+  
+// Update front stop flag
+  obstacle_distance = distance;
+}

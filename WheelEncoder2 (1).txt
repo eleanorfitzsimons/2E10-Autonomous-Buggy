@@ -1,0 +1,37 @@
+#ifndef WHEELENCODER_H
+#define WHEELENCOER_H
+
+#include <Arduino.h>
+
+
+extern volatile int Lpulse_count;
+extern volatile int Rpulse_count;
+
+
+///should consts be capitalised
+const int ppr = 8; //pulses per revolution
+const float wheel_circumference = 6.2 * 3.14;//cm 
+extern float total_distance_travelled;
+extern float current_distance_travelled;
+
+
+//////////////new/////////////
+extern unsigned long last_time_speed; //timer for speed
+extern int Llast_pulse; //the last time the pulses were measureing to get the difference and find the speed for the current period
+extern int Rlast_pulse; 
+extern double lspeed_val;
+extern double rspeed_val;
+extern float prev_speed;
+////////////////////////////////////////////
+
+void LcountPulse();
+void RcountPulse();
+
+float getDistanceTravelled(); //so ill use the float val for sending to the gui but round it for the calculations
+
+////////////////////////////
+double getBuggySpeed();
+float getCurrentSpeed(double time_diff);
+/////////////////////////////
+
+#endif // WHEELENCODER_H  

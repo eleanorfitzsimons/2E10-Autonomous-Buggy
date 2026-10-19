@@ -1,0 +1,175 @@
+#include "ArduinoPins.h"
+#include "Wifi.h"
+#include "MotorFunctions.h"
+#include "SensorFunctions.h"
+#include "WheelEncoder.h"
+#include "PIDController.h"
+
+
+char ssid[] = SSID;     
+char pass[] = PASS;    
+int keyIndex = 0;
+//bool client_connect = 0; 
+
+WiFiServer server(5200);
+WiFiClient client;
+
+//////////////////////
+bool stop_button = 0;
+double ref_speed = 45;
+
+unsigned long lastTelemetryTime = 0;
+const int telemetryInterval = 200;
+/////////////////////
+
+/*
+void connectClient(){
+
+///should i call buggy speed here
+//its only calling if telemetry is requested
+//want it to be called regularly???
+
+
+  client = server.available();
+  //check for connection
+  if (client.connected()){ //also just try if (client)
+    Serial.println("Client Connected");
+    client.write("Hello Client");
+    //client_connect = 1;
+
+    if (client.available()){
+      String data = client.readStringUntil('\n');
+      Serial.print("Recieved from client: ");
+      Serial.println(data);
+    
+    if (data.indexOf("GO_STATUS: GO") != -1) {  // Check if message contains "GO"
+      stop_button = 0;
+      Serial.println("GO command received.");
+    } 
+    else if (data.indexOf("GO_STATUS: STOP") != -1) {  // Check if message contains "STOP"
+      stop_button = 1;
+      stop_buggy();
+      Serial.println("STOP command received.");
+    }
+
+    // Parse REF_SPEED value
+    if (data.indexOf("REF_SPEED:") != -1) {
+      ref_speed = extractSpeed(data);
+      Serial.print("Extracted Ref Speed: ");
+      Serial.println(ref_speed);
+    }
+
+
+      //COMMANDS FROM GUI TO BUGGY
+      if (data == "GO"){ //this is green button
+        drive_forward(motor_speed); //what speed should i put here???....like initially?
+        stop_button = 0;
+
+      }else if (data == "STOP"){//this is red button
+        stop_buggy();
+        stop_button = 1;
+        //ok we only want to reset when go is pressed again
+      }
+
+      else if (data.startsWith("REF_SPEED")){ //this is adjusted with slider
+        ref_speed = extractSpeed(data);
+      }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      if (millis() - lastTelemetryTime >= telemetryInterval) {
+        lastTelemetryTime = millis();
+        sendTelemetry();
+      }
+      /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    }
+  }
+  //else{
+  //  client_connect = 0;
+  //}
+  
+}
+*/
+
+void connectClient() {
+  if (!client || !client.connected()) {  // If not connected, try to accept new client
+    client = server.available();
+    if (client) {
+      Serial.println("Client Connected");
+      client.write("Hello Client");
+    }
+    return;  // Exit if no client is connected
+  }
+
+  while (client.available()) {  // Read all available data
+    String data = client.readStringUntil('\n');
+    data.trim();
+    Serial.print("Received: ");
+    Serial.println(data);
+
+    // Handle GO/STOP commands
+    if (data.startsWith("GO_STATUS:")) {
+      if (data.indexOf("STOP") != -1) {
+        stop_button = 1;
+        Serial.println("STOP command received.");
+        stop_buggy();
+      } else  {
+        stop_button = 0;
+        Serial.println("GO command received.");
+      }
+    }
+
+    // Handle Reference Speed Command
+    else if (data.startsWith("REF_SPEED:")) {
+      ref_speed = extractSpeed(data);
+      Serial.print("Extracted Ref Speed: ");
+      Serial.println(ref_speed);
+      if (ref_speed == 0)
+        front_stop = 1;
+      else 
+        front_stop = 0;
+    }
+  }
+    if (millis() - lastTelemetryTime >= telemetryInterval) {
+      lastTelemetryTime = millis();
+      sendTelemetry();
+    }
+
+}
+
+
+void sendTelemetry(){
+  double speed_out = current_speed; //this is to be displayed as a slider (but cannot be modified by the gui user)
+  double dist_travelled = getDistanceTravelled(); //this number is displayed in a box
+  double object_dist = (obstacle_distance <= 40) ? obstacle_distance : -1;
+  String mode;
+    if (distMode){
+      mode = "DIST";
+    }
+    else 
+      mode = "SPEED";
+  client.println("SPEED_OUT: " + String(speed_out) + " DIST_TRAVELLED: " + String(dist_travelled) + " OBJECT_DIST: " + String(object_dist) + " MODE: " + mode);//also make sure when doing the processing to not
+ // Serial.println("SPEED_OUT: " + String(speed_out) + " DIST_TRAVELLED: " + String(dist_travelled) + " OBJECT_DIST: " + String(object_dist) + " MODE: " + mode);//mix up object and obstacle words
+      
+}
+
+//parses the input data from client to extract the speed
+float extractSpeed(String input) {
+    input.trim(); // Remove any leading or trailing spaces/newlines
+
+    if (!input.startsWith("REF_SPEED:")) {
+        Serial.println("Failed to extract speed: REF_SPEED not found");
+        return 0;
+    }
+
+    String numberStr = input.substring(10); // Extract everything after "REF_SPEED:"
+    numberStr.trim(); // Ensure no leading/trailing spaces
+    float speed_cmps = numberStr.toFloat();
+
+    if (speed_cmps == 0 && numberStr != "0") { 
+        Serial.println("Failed to extract speed: Conversion error");
+        return 0;
+    }
+
+    Serial.println("Extracted speed: " + String(speed_cmps));
+    return speed_cmps;
+}

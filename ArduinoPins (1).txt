@@ -1,0 +1,20 @@
+#ifndef ArduinoPins_H
+#define ArduinoPins_H
+//IR sensors
+const int LEYE = 6; 
+const int REYE = 5;
+//US sensors
+const int US_TRIG = 13;
+const int US_ECHO = 12;
+//encoders
+const int LENCODER = 2;
+const int RENCODER = 3;
+//Hbridge
+const int LMOTOR1 = 4; 
+const int LMOTOR2 = 7; 
+const int RMOTOR1 = 8; 
+const int RMOTOR2 = 9; 
+const int RENABLE = 10; 
+const int LENABLE = 11; 
+
+#endif // ArduinoPins_H

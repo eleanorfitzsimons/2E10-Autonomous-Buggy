@@ -1,0 +1,73 @@
+#include "WheelEncoder.h"
+#include "ArduinoPins.h"
+#include <Arduino.h>
+#include "PIDController.h"
+volatile int Lpulse_count = 0;
+volatile int Rpulse_count = 0;
+
+
+float total_distance_travelled = 0;
+float prev_distance_travelled = 0;
+unsigned long last_time_speed = 0;
+int Llast_pulse = 0;
+int Rlast_pulse = 0;
+double lspeed_val = 0;
+double rspeed_val = 0;
+float prev_speed = 0;
+
+void LcountPulse(){
+  Lpulse_count++;
+}
+void RcountPulse(){
+  Rpulse_count++;
+}
+
+float getDistanceTravelled(){
+  float right_dist = ((float)Rpulse_count / ppr )* wheel_circumference;
+  float left_dist = ((float)Lpulse_count / ppr )* wheel_circumference;
+  float avg_dist = (right_dist + left_dist) / 2.0;
+  
+  return avg_dist;
+}
+
+float getCurrentSpeed(double time_diff){
+  //Serial.print("Lpulse: "); Serial.print(Lpulse_count);
+  //Serial.print(" Rpulse: "); Serial.println(Rpulse_count);
+  //Serial.print("Time diff "); Serial.println(time_diff);
+  total_distance_travelled = getDistanceTravelled();
+  //Serial.print("Total dist travelled "); Serial.println(total_distance_travelled);
+  float current_dist = total_distance_travelled - prev_distance_travelled;
+  //Serial.print("current dist: "); Serial.println(current_dist);
+  prev_distance_travelled = total_distance_travelled;
+  
+   
+  float current_speed = current_dist / time_diff;
+   //Serial.print("current speed "); Serial.println(current_speed);
+  prev_speed = current_speed;
+  return current_speed;
+
+}
+/*
+double getBuggySpeed(){//going to be called in the clientconnect funciton so time will be updated reg enough
+  unsigned long current_time = millis();
+
+  if(current_time - last_time_speed >= 50){
+    int Lcurrent_pulse = Lpulse_count - Llast_pulse;
+    int Rcurrent_pulse = Rpulse_count - Rlast_pulse;
+
+    double Lrevs = Lcurrent_pulse / (double)ppr;
+    double Rrevs = Rcurrent_pulse / (double)ppr;
+
+    lspeed_val = (Lrevs * wheel_circumference) / ((current_time - last_time_speed) / 1000.0);
+    rspeed_val = (Rrevs * wheel_circumference) / ((current_time - last_time_speed) / 1000.0);
+
+    Llast_pulse = Lpulse_count;
+    Rlast_pulse = Rpulse_count;
+    last_time_speed = current_time;
+  }
+  
+  return (lspeed_val + rspeed_val)/2.0;                         
+  Serial.print("Lpulse: "); Serial.print(Lpulse_count);
+  Serial.print(" Rpulse: "); Serial.println(Rpulse_count);
+}
+*/
